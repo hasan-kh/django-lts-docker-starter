@@ -53,8 +53,8 @@ A fully-featured Django 5.2 LTS project template that includes a custom user mod
 
 1. Clone the repository:
    ```sh
-   git clone https://gitlab.com/hasankhodadadi97/tabdeal
-   cd template5.2
+   git clone https://github.com/hasan-kh/django-lts-docker-starter.git
+   cd django-lts-docker-starter
    ```
 
 2. Generate environment files from templates in the `envs` directory:
