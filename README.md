@@ -13,8 +13,8 @@ A fully-featured Django 5.2 LTS project template that includes a custom user mod
 2. Create your new project repository from the template.
 3. Clone your new project:
    ```bash
-   git clone https://github.com/your-username/your-new-repo.git
-   cd your-new-repo
+   git clone https://github.com/hasan-kh/django-lts-docker-starter.git
+   cd django-lts-docker-starter
 
 ## ⚙️ Features
 
