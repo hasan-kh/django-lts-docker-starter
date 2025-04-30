@@ -1,0 +1,65 @@
+services:
+  app:
+    build:
+      context: .
+    env_file:
+      - ./envs/.env
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - ./envs/.env.db
+
+  redis:
+    image: redis:7.2.0-alpine
+
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    env_file:
+      - ./envs/.env.rabbitmq
+
+  celery:
+    build:
+      context: .
+    command: >
+      sh -c "sh ./scripts/wait_for_rabbitmq.sh &&
+             sh ./scripts/wait_for_redis.sh &&
+             cd core &&
+             python manage.py wait_for_db &&
+             celery --app=core worker --loglevel=INFO --queues=tasks"
+    env_file:
+      - ./envs/.env
+    depends_on:
+      - app
+      - rabbitmq
+
+  celery_beat:
+    build:
+      context: .
+    command: >
+      sh -c "sh ./scripts/wait_for_rabbitmq.sh &&
+             sh ./scripts/wait_for_redis.sh &&
+             cd core &&
+             python manage.py wait_for_db &&
+             echo Sleeping 15 seconds until app service loads completely.
+             sleep 15 &&
+             celery --app=core beat --loglevel=INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    env_file:
+      - ./envs/.env
+    depends_on:
+      - app
+      - rabbitmq
+
+  flower:
+    build:
+      context: .
+      dockerfile: ./flower/Dockerfile
+    env_file:
+      - ./envs/.env.flower
+    depends_on:
+      - celery
+      - rabbitmq

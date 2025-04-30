@@ -1,0 +1,86 @@
+# gitlab runner, needs to have docker, docker compose and make installed
+stages:
+  - build
+  - lint
+  - test
+  - push
+  - new_release
+  - deploy
+
+before_script:
+  - make login_registry
+
+build:
+  stage: build
+  only:
+    - main
+    - dev
+    - merge_requests
+  script:
+    - make create-env-files
+    - make build-ci
+
+lint:
+  stage: lint
+  only:
+    - main
+    - dev
+    - merge_requests
+  script:
+    - make create-env-files
+    - make lint
+
+test:
+  stage: test
+  only:
+    - main
+    - dev
+    - merge_requests
+  script:
+    - make create-env-files
+    - make test
+
+push:
+  stage: push
+  only:
+    - main
+    - dev
+  script:
+    - make push
+
+new_release:
+  stage: new_release
+  script:
+    - echo "Create new release."
+  rules:
+    - if: "$CI_COMMIT_TAG"
+      when: always
+  release:
+    tag_name: "$CI_COMMIT_TAG"
+    description: "Release for $CI_COMMIT_TAG"
+
+deploy dev:
+  stage: deploy
+  only:
+    - main
+    - dev
+  environment:
+    name: dev
+  tags:
+    - dev
+  script:
+    - make debug
+    - make deploy
+
+deploy prod:
+  stage: deploy
+  only:
+    - main
+  when: manual
+  environment:
+    name: prod
+  tags:
+    - prod
+  script:
+    - make debug
+    - make deploy

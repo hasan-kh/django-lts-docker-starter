@@ -1,0 +1,48 @@
+services:
+  app:
+    image: "${CI_REGISTRY_IMAGE}/app:${CI_COMMIT_REF_NAME}"
+    command: >
+      sh -c "sh ./scripts/wait_for_rabbitmq.sh &&
+             sh ./scripts/wait_for_redis.sh &&
+             cd core &&
+             python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             django-admin compilemessages &&
+             gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 120 \
+                   --access-logfile - --error-logfile - --capture-output"
+
+    volumes:
+      - dev-static-data:/vol/web
+
+  db:
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+
+  celery:
+    image: "${CI_REGISTRY_IMAGE}/app:${CI_COMMIT_REF_NAME}"
+
+  celery_beat:
+    image: "${CI_REGISTRY_IMAGE}/app:${CI_COMMIT_REF_NAME}"
+
+  flower:
+    image: "${CI_REGISTRY_IMAGE}/flower:${CI_COMMIT_REF_NAME}"
+    ports:
+      - "5554:5555"
+
+  proxy:
+    image: "${CI_REGISTRY_IMAGE}/proxy:${CI_COMMIT_REF_NAME}"
+    build:
+      context: ./proxy
+    depends_on:
+      - app
+    ports:
+      - 80:80
+    env_file:
+      - ./envs/.env.proxy
+    volumes:
+      - dev-static-data:/vol/static
+
+volumes:
+  dev-static-data:
+  dev-db-data:

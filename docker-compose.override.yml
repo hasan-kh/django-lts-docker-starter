@@ -1,0 +1,50 @@
+services:
+  app:
+    image: template5.2app:latest  # Local image
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "sh ./scripts/wait_for_rabbitmq.sh &&
+             sh ./scripts/wait_for_redis.sh &&
+             cd core &&
+             python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             django-admin compilemessages &&
+             python manage.py runserver 0.0.0.0:8000"
+
+    volumes:
+      - ./core:/app/core
+      - ./scripts:/app/scripts
+      - template5.2-dev-static-data:/vol/web
+
+  db:
+    volumes:
+      - template5.2-dev-db-data:/var/lib/postgresql/data
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    ports:
+      - "5672:5672"   # main service port (AMQP)
+      - "15672:15672" # management console port
+
+  celery:
+    image: template5.2app:latest  # Local image
+    volumes:
+      - ./core:/app/core
+
+  celery_beat:
+    image: template5.2app:latest  # Local image
+    volumes:
+      - ./core:/app/core
+
+  flower:
+    ports:
+      - "5555:5555"
+
+volumes:
+  template5.2-dev-static-data:
+  template5.2-dev-db-data:
